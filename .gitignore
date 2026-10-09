@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.DS_Store
+.idea/
+.vscode/
+
+# audio + session artifacts
+*.wav
+*.aiff
+*.aif
+*.mp3
+*.flac
+session.json
+*.cueit.json
+*.cueit.csv
+*.cueit.bak
+
+# generated icon exports (source = icon/cueit.svg, shipped = cueit/assets/)
+icon/CueIt.iconset/
+icon/*.png
+icon/*.ico
+icon/*.icns
