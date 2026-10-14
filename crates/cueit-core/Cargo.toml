@@ -1,0 +1,31 @@
+[package]
+name = "cueit-core"
+description = "Cross-platform cue-point detection core for CueIt (pure Rust, native + wasm)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+rustfft = "6"
+rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+id3 = { version = "1", optional = true }
+ort = { version = "=2.0.0-rc.14", optional = true }
+ndarray = { version = "0.17", optional = true }
+ureq = { version = "3", optional = true, features = ["native-tls"] }
+
+[features]
+default = ["native-audio", "database", "tags"]
+# Decode audio files with ffmpeg (desktop/CLI). Off for wasm, where the browser
+# hands us decoded PCM instead.
+native-audio = []
+# Mixxx export writes straight into mixxxdb.sqlite (native only).
+database = ["dep:rusqlite"]
+# Serato export writes ID3 GEOB frames (native only).
+tags = ["dep:id3"]
+# Neural beat/downbeat (Beat This!) and key (Deezer S-KEY) via ONNX Runtime.
+# Native only; weights are downloaded to the data dir on first use.
+models = ["dep:ort", "dep:ndarray", "dep:ureq", "native-audio"]

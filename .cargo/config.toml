@@ -1,0 +1,9 @@
+# Some toolchains default to the bundled `rust-lld`, which fails to resolve the
+# LLVM anonymous symbols (`anon.*.llvm.*`) emitted by a few dependencies in the
+# desktop build ("undefined hidden symbol"). Fall back to the system linker
+# (GNU bfd) on Linux x86_64; other targets/platforms are unaffected.
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+  "-C", "link-arg=-fuse-ld=bfd",
+  "-C", "link-arg=-Wl,--no-gc-sections",
+]

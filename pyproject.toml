@@ -7,7 +7,7 @@ name = "cueit"
 version = "0.2.0"
 description = "Open-source automatic cue-point detection and export for DJ libraries (the free Mixed In Key)."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "CueIt contributors" }]
 keywords = ["dj", "cue-points", "key-detection", "bpm", "essentia", "rekordbox", "mixxx"]

@@ -1,0 +1,8 @@
+# Marks this directory as the pnpm workspace root.
+#
+# Without this file, pnpm walks up the filesystem and finds a stray
+# ~/pnpm-workspace.yaml, treating your entire home directory as one workspace
+# and pulling in unrelated packages (sharp, unrs-resolver, …) — which then
+# fails the Tauri CLI's dependency check with ERR_PNPM_IGNORED_BUILDS.
+allowBuilds:
+  esbuild: true

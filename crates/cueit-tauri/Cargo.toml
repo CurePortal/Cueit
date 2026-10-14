@@ -1,0 +1,34 @@
+[package]
+name = "cueit-tauri"
+description = "CueIt desktop application (Tauri v2 shell)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "cueit_tauri_lib"
+# Desktop-only: `rlib` is all the binary needs. The `cdylib`/`staticlib` types
+# (used for mobile targets) fail to link here because the system/lld linkers
+# can't relocate LLVM's anonymous `anon.*.llvm.*` hidden symbols into a shared
+# object.
+crate-type = ["rlib"]
+
+[features]
+default = []
+# Enables Tauri's production asset embedding. Without it, a release build is
+# still "dev" (`tauri`'s build script sets `dev = !custom-protocol`) and the
+# window tries to load the dev-server URL. `tauri build` sets this itself; a
+# manual release build must pass `--features custom-protocol`.
+custom-protocol = ["tauri/custom-protocol"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+cueit-core = { path = "../cueit-core", features = ["models"] }
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+rodio = { version = "=0.20.1", default-features = false }

@@ -1,199 +1,155 @@
 # CueIt
 
-**The free, open-source Mixed In Key.** CueIt analyses your tracks and
-auto-places hot cues, then exports them to Rekordbox, Mixxx, Serato and Traktor.
+**The free, open-source Mixed In Key.** CueIt analyses your tracks, auto-places
+hot cues, and exports them to Rekordbox, Traktor, Mixxx and Serato.
+
+> ### Alpha 2 — full Rust rewrite
+>
+> CueIt is now a single **Rust** project. One shared core powers a native desktop
+> app (Linux, macOS and **Windows**), a CLI, and a **WebAssembly** build for the
+> browser — from the same code. The previous Python version is **deprecated**
+> (see [below](#why-the-python-version-is-deprecated)).
+
+**▶ Try the web demo:** **https://cureportal.github.io/Cueit/** — it analyses in
+your browser (the pure-Rust DSP engine compiled to WebAssembly); nothing is
+uploaded.
 
 ```
-BPM + key (Camelot)     -> Essentia
-beat + downbeat grid    -> Essentia
-structure (intro / drop) -> MFCC self-similarity segmentation
-cue inference           -> DJ-style heuristics (intro / drop / breakdown / outro)
+tempo + key (Camelot)     -> pure-Rust DSP  (optionally Deezer S-KEY model)
+beat + downbeat grid      -> pure-Rust DSP
+structure (intro / drop)  -> MFCC self-similarity segmentation
+cue inference             -> DJ-style heuristics (intro / drop / breakdown / outro)
 ```
+
+## Why the Python version is deprecated
+
+The first CueIt was Python. Its analysis depended on **Essentia**, and Essentia
+publishes Python wheels **only for Linux and macOS** — there are **no Windows
+wheels at all**, and no source distribution for current releases. On Windows the
+only way to run Essentia was inside **WSL2**, which is a poor prerequisite for a
+desktop DJ tool: a full Linux VM, a display server (WSLg), audio plumbing, and
+`/mnt/c` file paths.
+
+Rather than ask Windows users to install WSL, CueIt was rewritten in Rust:
+
+- a **pure-Rust DSP engine** replaces Essentia (no native blobs, no WSL),
+- the **same code** runs natively on Windows, macOS and Linux, and
+- it **compiles to WebAssembly** for the browser build.
+
+The old Python tree (`cueit/`, `pyproject.toml`) is kept only for reference and
+is no longer maintained.
 
 ## Features
 
-- Tempo, musical key, Camelot code and danceability-style energy analysis
+- Tempo, musical key, Camelot code and loudness analysis
 - Beat grid + downbeat detection
 - Structural segmentation: intro / verse / drop / breakdown / outro
 - Automatic hot-cue inference, snapped to the downbeat grid
-- Waveform GUI with editable cues and audio playback
-- **Batch jobs**: add individual files, whole folders, or an entire DJ library,
-  queue them, and analyze many tracks in parallel across all CPU cores
-- **Load from DJ library**: import the track list from Mixxx, Rekordbox (XML) or
-  Traktor (`collection.nml`) and queue every track automatically
-- Exporters:
-  - **Rekordbox** — `rekordbox.xml` (imports into Rekordbox 6/7)
-  - **Traktor** — `collection.nml`
-  - **Mixxx** — writes directly into `mixxxdb.sqlite` (automatic backup)
-  - **Serato** — writes `Serato Markers_` / `Serato Markers2` ID3 tags (MP3/AIFF)
-  - **JSON / CSV** — neutral interchange
-
-## How cue detection works
-
-CueIt does not just drop a cue every 4 beats. It builds a beat grid, finds
-the true bar line, detects phrase length, and picks musically meaningful points:
-
-1. **Beat + bar grid** — Essentia `RhythmExtractor2013` gives the beat grid; a
-   score combining kick-band energy + low-band flux (bass-note change) *and*
-   mid-band snare-flux accents on the backbeats picks the correct downbeat
-   phase, with a confidence value shown in the UI.
-2. **Phrase length** — compares 4-bar vs 8-bar novelty periodicity per track, so
-   cues are preferred on 32-beat phrase starts (where DJs actually mix).
-3. **Structure** — MFCC self-similarity segmentation finds section boundaries,
-   which are snapped to the downbeat grid.
-4. **Cue selection by prominence** — drops are placed at the largest *energy
-   rises* and breakdowns at the largest *falls*, de-duplicated and spaced out, so
-   a track with one real drop gets one drop cue instead of eight. Everything is
-   snapped to bars/phrases, then capped at 8 hot cues (DJ-standard).
-
-Tune the result per track with **Re-detect cues** in the GUI, or by dragging the
-cue tabs (each cue line has grab handles at both the top and bottom).
-
-## Parallelism
-
-Batch analysis uses a process pool (`spawn`, so it behaves identically on
-Linux, macOS and Windows). It is built for large libraries, unlike tools that
-hang on a 2000-track run:
-
-- **Cancel** the batch at any time (GUI button or `Ctrl-C` in the CLI); the pool
-  is terminated immediately and unfinished tracks are left queued.
-- **Per-track timeout** (`--timeout`, default 600s): a single stuck file is
-  marked as an error and skipped instead of wedging the whole run.
-- **Resumable session**: results are saved incrementally to
-  `~/.local/share/CueIt/session.json` (every 5 tracks and on exit). Restart
-  CueIt and previously analyzed tracks reload instantly, so `Run batch`
-  continues where you left off. File ▸ Clear saved session resets it.
-- **Bounded memory**: workers recycle every 25 tracks.
-- **No CPU oversubscription**: each worker is pinned to a single BLAS/FFT thread
-  *before* numpy/Essentia import, so N workers use N threads, not N x cores.
-  This is what keeps the GUI and audio playback smooth during a big batch.
-- **Always-responsive UI**: batch workers run at low OS priority (`nice`), and
-  the GUI never blocks — session files are written by a background thread and cue
-  drags update a single table cell instead of rebuilding the list. Dragging cue
-  selectors while audio plays during a big batch stays smooth.
-- Worker count defaults to `min(cpu_count - 1, 8)`; raise it in the spin box or
-  with `--workers N` if you have RAM and cores to spare.
-
-
+- Waveform GUI with draggable cue handles, undo/redo, playback and zoom
+- **Batch jobs**: files, folders, or an entire DJ library; queue and analyse many
+  tracks in parallel across all CPU cores, with a **CPU-limit** control so the
+  machine stays responsive
+- Import track lists from **Mixxx**, **Rekordbox** and **Traktor**, or a folder
+- **Exporters**: Rekordbox (`rekordbox.xml`), Traktor (`collection.nml`),
+  **Mixxx** (direct SQLite), **Serato** (ID3 tags), JSON, CSV
+- Optional **neural models** (ONNX Runtime): Deezer **S-KEY** for key detection
+  (and Beat This! for beats, currently disabled pending tuning)
 
 ## Install
 
-CueIt needs **Python 3.10+** and **ffmpeg** on your PATH.
+Requires **ffmpeg** on your `PATH`.
+
+### Download (desktop)
+
+Prebuilt desktop builds are attached to the
+[Releases](https://github.com/CurePortal/Cueit/releases) page
+(Linux `.deb`/`.rpm`/AppImage, macOS `.dmg`, Windows `.msi`/`.exe`).
+
+### Build from source
+
+Requires a Rust toolchain (1.75+), Node 18+ and pnpm.
 
 ```bash
 git clone https://github.com/CurePortal/Cueit
-cd cueit
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -e .
+cd Cueit
+
+# CLI only
+cargo build --release -p cueit
+
+# Desktop app (Tauri)
+cd crates/cueit-tauri && pnpm install
+pnpm tauri dev            # develop
+pnpm tauri build          # release bundles / installers
 ```
 
-## GUI
+> **Manual release build note:** Tauri decides dev vs. production from the
+> `custom-protocol` feature. `pnpm tauri build` sets it; a plain
+> `cargo build --release` must pass it too, or the window will try to load the
+> dev-server URL:
+> `cargo build --release -p cueit-tauri --features custom-protocol`.
+
+### Web (WebAssembly)
 
 ```bash
-cueit gui                 # or: python -m cueit.app
-cueit gui track1.mp3 track2.aiff
+wasm-pack build crates/cueit-wasm --target web --release --out-dir web/pkg
+# then serve web/ (e.g. python3 -m http.server) or deploy to GitHub Pages
 ```
 
-Add files, a whole folder, or your DJ library (buttons or drag-and-drop).
-Libraries load **off the UI thread** and never look frozen. Nothing is analyzed
-automatically — the queue fills first, then you choose:
-- **Run selected** — analyze only the highlighted rows,
-- **Run batch (all)** — analyze every pending track.
+The web build runs the pure-Rust DSP engine in the browser; the neural models
+are desktop-only.
 
-Click any analyzed row to inspect its cues. Drag cues on the waveform, edit the
-table, click the waveform to seek, and `+ Cue at playhead` adds a cue. Exports act
-on every analyzed track in the session.
+### Neural models (optional, desktop)
+
+Two open, MIT-licensed models via ONNX Runtime:
+**Beat This!** (CPJKU, ISMIR 2024) and Deezer **S-KEY** (ICASSP 2025).
+
+Weights download on first use to `~/.local/share/CueIt/models` (S-KEY is ~0.3 MB).
+Disable with `cueit analyze --no-models`, or toggle in the app with the
+**AI models** button. When unavailable, the pure-Rust DSP engine is used.
 
 ## CLI
 
 ```bash
-# Analyse a folder (recursive) and print cues
 cueit analyze ~/Music/albums
-
-# Parallel batch -> rekordbox.xml for the whole folder
-cueit analyze ~/Music/albums --export rekordbox --out ~/exports --workers 8
-
-# Analyze every track in your Mixxx / Rekordbox / Traktor library
+cueit analyze ~/Music/albums --export rekordbox --out ~/exports --workers 12 --cpu-limit 75
+cueit analyze --library mixxx --export mixxx
+cueit analyze track.flac --export serato
 cueit libraries
-cueit analyze --library mixxx --export rekordbox --out ~/exports
-cueit analyze --library rekordbox --library-file ~/rekordbox.xml --export json --out ~/exports
-
-# Export to Traktor, Mixxx, Serato, JSON, CSV
-cueit analyze ~/Music/albums --export traktor   --out ~/exports
-cueit analyze ~/Music/albums --export mixxx
-cueit analyze ~/Music/albums --export serato
-cueit analyze ~/Music/albums --export csv --out ~/exports
 ```
 
-In the GUI, use **Add files…**, **Add folder…**, or **Load DJ library…**
-(auto-detects Mixxx / Rekordbox / Traktor; a Browse button lets you point at any
-library file).
+## Desktop app
 
-### Keyboard shortcuts
+- Queue tracks (files / folder / DJ library), set **Threads** and **CPU** limit,
+  run the batch (resumable, cancellable).
+- Inspect each track: waveform with section shading and **draggable cue handles**
+  (arrows top/bottom), edit or **double-click the waveform to add a cue**,
+  undo/redo, playback (native via `rodio`), zoom with the wheel.
+- Export the whole session to Rekordbox / Traktor / Mixxx / Serato / JSON / CSV.
 
-| Key | Action |
+Keyboard shortcuts: `Space` play/pause, `←/→` seek, `C` cue at playhead, wheel
+zoom, `Ctrl+Z`/`Ctrl+Shift+Z` undo/redo, `Ctrl+R` run, `F1` for all.
+
+## Workspace layout
+
+| crate | role |
 | --- | --- |
-| `Space` | Play / pause |
-| `←` / `→` | Jump back / forward 10s |
-| `Ctrl+←` / `Ctrl+→` | Previous / next cue |
-| `↑` / `↓` | Previous / next track in the queue |
-| `Home` / `End` | Go to start / end |
-| `C` | Add cue at playhead |
-| `Delete` | Delete selected cue |
-| Mouse wheel | Zoom around cursor |
-| `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom in / out / fit |
-| `Ctrl+D` / `Ctrl+L` | Dark / light mode |
-| `Ctrl+R` / `Esc` | Run / cancel batch |
-| `Ctrl+Shift+R` | Re-detect cues |
-| `Ctrl+S` | Save session |
-| `Ctrl+O` / `Ctrl+Shift+O` / `Ctrl+Shift+L` | Add files / folder / DJ library |
-| `F1` | Show all shortcuts |
+| `crates/cueit-core` | domain model, pure-Rust DSP, cue inference, exporters, importers, session, batch runner. Compiles native **and** `wasm32`. |
+| `crates/cueit-cli` | `cueit` CLI |
+| `crates/cueit-tauri` | desktop app (Tauri v2) |
+| `crates/cueit-wasm` | `wasm-bindgen` bindings for the web build |
+| `frontend/` | React + TypeScript + Vite UI |
+| `web/` | static WASM web app (GitHub Pages) |
 
-Shortcuts are ignored while editing a cue-table cell, spin box or text field,
-so inline editing works normally.
+## Status
 
-## Building installers (Windows / macOS / Linux)
+Alpha 2. Working: DSP engine, cue inference, all exporters/importers, session
+persistence, parallel batch with CPU limiting, CLI, desktop app (waveform, cues,
+playback, undo/redo), web build, and the S-KEY key model.
 
-The GUI is Qt (PySide6), which ships wheels for all three platforms. To ship a
-standalone binary, use [PyInstaller](https://pyinstaller.org):
-
-```bash
-pip install pyinstaller
-pyinstaller --noconfirm --windowed --name CueIt \
-  --icon cueit/assets/cueit.ico \
-  --add-data "cueit/assets:cueit/assets" \
-  --collect-data essentia \
-  --hidden-import PySide6.QtMultimedia \
-  -m cueit.app
-```
-
-Build on each target OS (PyInstaller does not cross-compile). ffmpeg must be
-bundled or available on the target machine. On macOS use
-`--icon cueit/assets/cueit.icns`.
-
-## Notes / limitations
-
-- Serato tag writing supports MP3 and AIFF only. Use the Rekordbox XML bridge
-  for other formats.
-- Mixxx writes go straight to the SQLite DB with a one-time `.cueit.bak`
-  backup; close Mixxx first.
-- Key detection matches Mixed In Key / Mixxx on the test material, but no
-  detector is perfect — always sanity-check the odd track.
-
-## Architecture
-
-| module | role |
-| --- | --- |
-| `cueit/audio.py` | ffmpeg decode, waveform peaks, RMS envelope |
-| `cueit/analysis.py` | Essentia tempo/key/beats/downbeats/segmentation |
-| `cueit/cue.py` | cue-point inference |
-| `cueit/batch.py` | folder discovery + parallel process-pool batch analysis |
-| `cueit/libraries.py` | import track lists from Mixxx / Rekordbox / Traktor |
-| `cueit/exporters.py` | Rekordbox / Traktor / Mixxx / Serato / JSON / CSV |
-| `cueit/app.py` | Qt GUI |
-| `cueit/cli.py` | command line |
+Known limitations: Beat This! beats are disabled pending log-mel front-end
+validation (the DSP beat grid is used instead); cue selection heuristics are still
+being tuned against labelled tracks.
 
 ## License
 
-MIT
+MIT. Bundled/optional models: Beat This! and S-KEY are MIT.

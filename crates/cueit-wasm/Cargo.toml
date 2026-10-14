@@ -1,0 +1,17 @@
+[package]
+name = "cueit-wasm"
+description = "WebAssembly bindings for CueIt (browser analysis with Web Audio-decoded PCM)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# No default features: the web build must not pull in the native ffmpeg decode.
+cueit-core = { path = "../cueit-core", default-features = false }
+wasm-bindgen = "0.2"
+serde.workspace = true
+serde-wasm-bindgen = "0.6"

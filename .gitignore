@@ -25,3 +25,14 @@ icon/CueIt.iconset/
 icon/*.png
 icon/*.ico
 icon/*.icns
+
+# rust
+/target/
+
+# node / frontend
+node_modules/
+frontend/dist/
+
+
+# built wasm web package (deployed to gh-pages)
+web/pkg/

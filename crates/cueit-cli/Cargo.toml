@@ -1,0 +1,15 @@
+[package]
+name = "cueit"
+description = "CueIt command line: analyze audio and export DJ cues headlessly"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "cueit"
+path = "src/main.rs"
+
+[dependencies]
+cueit-core = { path = "../cueit-core", features = ["models"] }
+clap = { version = "4", features = ["derive"] }

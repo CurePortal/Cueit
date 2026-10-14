@@ -20,6 +20,19 @@ def _print_track(t: exporters.TrackData):
         print(f"    {c.name:<12} {int(mm):02d}:{ss:05.2f}  {c.color}")
 
 
+def _warn_if_mixxx_running():
+    """Mixxx holds the sqlite DB open; warn if it looks like it is running."""
+    import subprocess
+    try:
+        out = subprocess.run(["pgrep", "-x", "mixxx"], capture_output=True, text=True).stdout.strip()
+    except Exception:  # noqa: BLE001
+        out = ""
+    if out:
+        print("\nWARNING: Mixxx appears to be running (pid %s). Close it before "
+              "writing to the library, or your changes may be overwritten or the "
+              "write may fail.\n" % out, file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cueit", description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -90,14 +103,38 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     workers = args.workers or default_workers()
-    print(f"analyzing {len(paths)} file(s) with {workers} workers…", file=sys.stderr)
+    total = len(paths)
+    print(f"analyzing {total} file(s) with {workers} workers…", file=sys.stderr)
+
+    progress = {"n": 0}
+    incremental_mixxx = args.export == "mixxx"
+    if incremental_mixxx:
+        _warn_if_mixxx_running()
+        print("writing cues to the Mixxx library as each track finishes…", file=sys.stderr)
 
     def on_start(job):
-        print(f"  [start] {job.name}", file=sys.stderr)
+        pass
 
     def on_done(job):
-        mark = "ok" if job.track else "FAIL"
-        print(f"  [{mark:>4}] {job.name}", file=sys.stderr)
+        progress["n"] += 1
+        n = progress["n"]
+        name = job.name if len(job.name) < 44 else job.name[:41] + "…"
+        if job.track is None:
+            if job.status != "cancelled":
+                print(f"  [{n:>5}/{total}] FAIL  {name}: {job.error}", file=sys.stderr)
+            return
+        a = job.track.analysis
+        note = ""
+        if incremental_mixxx:
+            # Write each track to the library immediately so a long run is safe
+            # and resumable, and so you can watch it take effect live.
+            try:
+                exporters.export_mixxx(job.track, db_path=args.mixxx_db)
+                note = "-> mixxx"
+            except Exception as exc:  # noqa: BLE001
+                note = f"-> mixxx FAIL: {exc}"
+        print(f"  [{n:>5}/{total}] {a.bpm:6.1f} {a.key} {a.scale:<5} "
+              f"{len(job.track.cues)} cues  {name}  {note}".rstrip(), file=sys.stderr)
 
     result = run_batch(
         paths, workers=workers,
@@ -106,17 +143,28 @@ def main(argv: list[str] | None = None) -> int:
         task_timeout=(args.timeout or None),
     )
     tracks = result.tracks
-    for t in tracks:
-        _print_track(t)
 
     errors = [j for j in result.jobs if j.status == "error"]
     if errors:
-        print("\nfailures:", file=sys.stderr)
-        for j in errors:
+        print(f"\n{len(errors)} failure(s):", file=sys.stderr)
+        for j in errors[:20]:
             print(f"  {j.name}: {j.error}", file=sys.stderr)
 
+    # Detailed per-track dump only for small runs; for big libraries the
+    # progress lines above are enough.
+    if total <= 15:
+        for t in tracks:
+            _print_track(t)
+
     if args.export == "none" or not tracks:
+        print(f"\ndone: {len(tracks)} analysed, {len(errors)} failed.", file=sys.stderr)
         return 0
+
+    if incremental_mixxx:
+        print(f"\ndone: {len(tracks)} tracks analysed and written to the Mixxx library "
+              f"(backup: {os.path.expanduser(args.mixxx_db)}.cueit.bak).", file=sys.stderr)
+        return 0
+
     if args.export in ("rekordbox", "traktor"):
         out = os.path.join(args.out, "rekordbox.xml" if args.export == "rekordbox" else "collection.nml")
         getattr(exporters, f"export_{args.export}")(tracks, out)
@@ -130,9 +178,6 @@ def main(argv: list[str] | None = None) -> int:
             elif args.export == "csv":
                 out = os.path.join(args.out, base + ".cueit.csv")
                 exporters.export_csv(t, out)
-            elif args.export == "mixxx":
-                exporters.export_mixxx(t, db_path=args.mixxx_db)
-                out = f"mixxx:{os.path.basename(t.path)}"
             elif args.export == "serato":
                 out = exporters.export_serato(t)
             print(f"  -> {out}")
