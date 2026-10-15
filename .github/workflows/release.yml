@@ -48,6 +48,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: latest
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11
@@ -60,6 +64,9 @@ jobs:
 
       - name: Install app CLI dependencies
         run: pnpm --dir crates/cueit-tauri install --no-frozen-lockfile
+
+      - name: Build the WASM package (needed by the frontend type-check)
+        run: wasm-pack build crates/cueit-wasm --target web --release --out-dir frontend/src/wasm
 
       - name: Build and attach to release
         uses: tauri-apps/tauri-action@v0

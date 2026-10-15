@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CueIt",
   "version": "0.2.0-alpha.2",
-  "identifier": "com.cueit.app",
+  "identifier": "com.cueit.desktop",
   "build": {
     "frontendDist": "../../frontend/dist",
     "devUrl": "http://localhost:1420",

@@ -25,16 +25,14 @@ type Wasm = {
 
 let ready: Promise<Wasm> | null = null;
 function wasm(): Promise<Wasm> {
-  if (!ready) {
-    ready = init().then(() => ({
-      wasmAnalyze,
-      inferCues,
-      exportJson,
-      exportCsv,
-      exportRekordbox,
-      exportTraktor,
-    }));
-  }
+  ready ??= init().then(() => ({
+    wasmAnalyze,
+    inferCues,
+    exportJson,
+    exportCsv,
+    exportRekordbox,
+    exportTraktor,
+  }));
   return ready;
 }
 
