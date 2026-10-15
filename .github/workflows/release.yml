@@ -66,7 +66,7 @@ jobs:
         run: pnpm --dir crates/cueit-tauri install --no-frozen-lockfile
 
       - name: Build the WASM package (needed by the frontend type-check)
-        run: wasm-pack build crates/cueit-wasm --target web --release --out-dir frontend/src/wasm
+        run: wasm-pack build crates/cueit-wasm --target web --release --out-dir "${{ github.workspace }}/frontend/src/wasm"
 
       - name: Build and attach to release
         uses: tauri-apps/tauri-action@v0
