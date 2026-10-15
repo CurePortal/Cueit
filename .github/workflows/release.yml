@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-22.04
+          - platform: ubuntu-24.04
             args: ""
           - platform: macos-13
             args: "--target x86_64-apple-darwin"
@@ -30,11 +30,16 @@ jobs:
           - platform: windows-latest
             args: ""
     runs-on: ${{ matrix.platform }}
+    env:
+      # ONNX Runtime's prebuilt macOS libs need a modern deployment target for
+      # the availability runtime symbol (`___isPlatformVersionAtLeast`).
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - uses: actions/checkout@v4
 
       - name: Linux system dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-24.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
