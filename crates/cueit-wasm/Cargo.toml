@@ -1,10 +1,10 @@
 [package]
 name = "cueit-wasm"
 description = "WebAssembly bindings for CueIt (browser analysis with Web Audio-decoded PCM)"
-version.workspace = true
-edition.workspace = true
+version = "0.2.0"
+edition = "2021"
 license = "MIT"
-repository.workspace = true
+repository = "https://github.com/CurePortal/Cueit"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
