@@ -53,13 +53,13 @@ jobs:
           version: 11
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install frontend dependencies
-        run: pnpm --dir frontend install
+        run: pnpm --dir frontend install --no-frozen-lockfile
 
       - name: Install app CLI dependencies
-        run: pnpm --dir crates/cueit-tauri install
+        run: pnpm --dir crates/cueit-tauri install --no-frozen-lockfile
 
       - name: Build and attach to release
         uses: tauri-apps/tauri-action@v0
