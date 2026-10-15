@@ -31,10 +31,11 @@ jobs:
             args: ""
     runs-on: ${{ matrix.platform }}
     env:
-      # ONNX Runtime's prebuilt macOS libs need a modern deployment target for
-      # the availability runtime symbol (`___isPlatformVersionAtLeast`).
-      MACOSX_DEPLOYMENT_TARGET: "11.0"
-      CMAKE_OSX_DEPLOYMENT_TARGET: "11.0"
+      # ONNX Runtime's prebuilt macOS libs are built for macOS 13.4 and reference
+      # the availability runtime symbol `___isPlatformVersionAtLeast`, which must
+      # be resolved at load time on macOS.
+      MACOSX_DEPLOYMENT_TARGET: "13.4"
+      RUSTFLAGS: ${{ startsWith(matrix.platform, 'macos') && '-C link-arg=-Wl,-undefined,dynamic_lookup' || '' }}
     steps:
       - uses: actions/checkout@v4
 
