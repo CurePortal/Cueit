@@ -102,7 +102,7 @@ struct JsonTrack<'a> {
     cues: Vec<JsonCue<'a>>,
 }
 
-pub fn export_json(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<String> {
+pub fn json_string(track: &TrackData) -> String {
     let data = JsonTrack {
         file: &track.path,
         title: track.title(),
@@ -116,14 +116,16 @@ pub fn export_json(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<
             .map(|c| JsonCue { name: &c.name, time: c.time, color: &c.color })
             .collect(),
     };
-    let json = serde_json::to_string_pretty(&data)
-        .map_err(io::Error::other)?;
+    serde_json::to_string_pretty(&data).unwrap_or_default()
+}
+
+pub fn export_json(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<String> {
     let path = out_path.as_ref();
-    std::fs::write(path, json)?;
+    std::fs::write(path, json_string(track))?;
     Ok(path.to_string_lossy().into_owned())
 }
 
-pub fn export_csv(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<String> {
+pub fn csv_string(track: &TrackData) -> String {
     let mut s = String::new();
     let row = |s: &mut String, fields: &[String]| {
         let line: Vec<String> = fields.iter().map(|f| csv_field(f)).collect();
@@ -160,16 +162,15 @@ pub fn export_csv(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<S
     for (i, c) in track.cues.iter().enumerate() {
         row(
             &mut s,
-            &[
-                i.to_string(),
-                c.name.clone(),
-                format!("{:.3}", c.time),
-                c.color.clone(),
-            ],
+            &[i.to_string(), c.name.clone(), format!("{:.3}", c.time), c.color.clone()],
         );
     }
+    s
+}
+
+pub fn export_csv(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<String> {
     let path = out_path.as_ref();
-    std::fs::write(path, s)?;
+    std::fs::write(path, csv_string(track))?;
     Ok(path.to_string_lossy().into_owned())
 }
 
@@ -177,7 +178,7 @@ pub fn export_csv(track: &TrackData, out_path: impl AsRef<Path>) -> io::Result<S
 // Rekordbox XML
 // --------------------------------------------------------------------------- //
 
-pub fn export_rekordbox(tracks: &[TrackData], out_path: impl AsRef<Path>) -> io::Result<String> {
+pub fn rekordbox_string(tracks: &[TrackData]) -> String {
     let mut x = String::new();
     x.push_str("<?xml version='1.0' encoding='UTF-8'?>\n");
     x.push_str("<DJ_PLAYLISTS Version=\"1.0.0\">\n");
@@ -227,8 +228,12 @@ Red=\"{}\" Green=\"{}\" Blue=\"{}\" />",
     x.push_str("    </NODE>\n");
     x.push_str("  </PLAYLISTS>\n");
     x.push_str("</DJ_PLAYLISTS>\n");
+    x
+}
+
+pub fn export_rekordbox(tracks: &[TrackData], out_path: impl AsRef<Path>) -> io::Result<String> {
     let path = out_path.as_ref();
-    std::fs::write(path, x)?;
+    std::fs::write(path, rekordbox_string(tracks))?;
     Ok(path.to_string_lossy().into_owned())
 }
 
@@ -236,7 +241,7 @@ Red=\"{}\" Green=\"{}\" Blue=\"{}\" />",
 // Traktor NML
 // --------------------------------------------------------------------------- //
 
-pub fn export_traktor(tracks: &[TrackData], out_path: impl AsRef<Path>) -> io::Result<String> {
+pub fn traktor_string(tracks: &[TrackData]) -> String {
     let now = chrono::Local::now();
     let date = now.format("%Y/%m/%d").to_string();
     let clock = now.format("%H:%M:%S").to_string();
@@ -296,8 +301,12 @@ LENGTH=\"0.000000\" REPEATS=\"-1\" HOTCUE=\"{}\" />",
     }
     x.push_str("  </COLLECTION>\n");
     x.push_str("</NML>\n");
+    x
+}
+
+pub fn export_traktor(tracks: &[TrackData], out_path: impl AsRef<Path>) -> io::Result<String> {
     let path = out_path.as_ref();
-    std::fs::write(path, x)?;
+    std::fs::write(path, traktor_string(tracks))?;
     Ok(path.to_string_lossy().into_owned())
 }
 

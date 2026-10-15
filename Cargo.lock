@@ -681,7 +681,7 @@ checksum = "914a755b7c2d4af2bdcff7ce1739e2db9a1b81a9b07123d8015786ae03c0980d"
 
 [[package]]
 name = "cueit"
-version = "0.1.0"
+version = "0.2.0-alpha.2"
 dependencies = [
  "clap",
  "cueit-core",
@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "cueit-core"
-version = "0.1.0"
+version = "0.2.0-alpha.2"
 dependencies = [
  "chrono",
  "id3",
@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "cueit-tauri"
-version = "0.1.0"
+version = "0.2.0-alpha.2"
 dependencies = [
  "cueit-core",
  "rodio",
@@ -717,7 +717,7 @@ dependencies = [
 
 [[package]]
 name = "cueit-wasm"
-version = "0.1.0"
+version = "0.2.0-alpha.2"
 dependencies = [
  "cueit-core",
  "serde",

@@ -14,7 +14,8 @@ use wasm_bindgen::prelude::*;
 
 use cueit_core::analysis::analyze_pcm;
 use cueit_core::cue::infer_cues;
-use cueit_core::types::AnalysisResult;
+use cueit_core::exporters;
+use cueit_core::types::{AnalysisResult, TrackData};
 
 /// Run the full DSP + key + structure pipeline on decoded mono PCM.
 ///
@@ -39,4 +40,36 @@ pub fn infer_cues_js(analysis: JsValue, use_downbeats: bool) -> Result<JsValue, 
 #[wasm_bindgen(js_name = camelot)]
 pub fn camelot_js(pc: u32, major: bool) -> String {
     cueit_core::analysis::camelot(pc as usize, major).to_string()
+}
+
+fn to_track(v: JsValue) -> Result<TrackData, JsError> {
+    serde_wasm_bindgen::from_value(v).map_err(|e| JsError::new(&format!("bad track: {e}")))
+}
+
+fn to_tracks(v: JsValue) -> Result<Vec<TrackData>, JsError> {
+    serde_wasm_bindgen::from_value(v).map_err(|e| JsError::new(&format!("bad tracks: {e}")))
+}
+
+/// Export a single track to the JSON interchange format (returns the text).
+#[wasm_bindgen(js_name = exportJson)]
+pub fn export_json_js(track: JsValue) -> Result<String, JsError> {
+    Ok(exporters::json_string(&to_track(track)?))
+}
+
+/// Export a single track to CSV (returns the text).
+#[wasm_bindgen(js_name = exportCsv)]
+pub fn export_csv_js(track: JsValue) -> Result<String, JsError> {
+    Ok(exporters::csv_string(&to_track(track)?))
+}
+
+/// Build a Rekordbox `rekordbox.xml` document (returns the text).
+#[wasm_bindgen(js_name = exportRekordbox)]
+pub fn export_rekordbox_js(tracks: JsValue) -> Result<String, JsError> {
+    Ok(exporters::rekordbox_string(&to_tracks(tracks)?))
+}
+
+/// Build a Traktor `collection.nml` document (returns the text).
+#[wasm_bindgen(js_name = exportTraktor)]
+pub fn export_traktor_js(tracks: JsValue) -> Result<String, JsError> {
+    Ok(exporters::traktor_string(&to_tracks(tracks)?))
 }

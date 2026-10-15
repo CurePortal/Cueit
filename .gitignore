@@ -36,3 +36,7 @@ frontend/dist/
 
 # built wasm web package (deployed to gh-pages)
 web/pkg/
+
+# wasm web build artifacts
+frontend/src/wasm/
+/web/

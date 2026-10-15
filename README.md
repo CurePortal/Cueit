@@ -10,9 +10,10 @@ hot cues, and exports them to Rekordbox, Traktor, Mixxx and Serato.
 > browser — from the same code. The previous Python version is **deprecated**
 > (see [below](#why-the-python-version-is-deprecated)).
 
-**▶ Try the web demo:** **https://cureportal.github.io/Cueit/** — it analyses in
-your browser (the pure-Rust DSP engine compiled to WebAssembly); nothing is
-uploaded.
+**▶ Try the web demo:** **https://cureportal.github.io/Cueit/** — the **same UI as
+the desktop app**, running entirely in your browser (analysis via the pure-Rust
+DSP engine compiled to WebAssembly). Nothing is uploaded. Neural models are
+desktop-only.
 
 ```
 tempo + key (Camelot)     -> pure-Rust DSP  (optionally Deezer S-KEY model)
