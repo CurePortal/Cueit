@@ -3,7 +3,7 @@ name = "cueit-wasm"
 description = "WebAssembly bindings for CueIt (browser analysis with Web Audio-decoded PCM)"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license = "MIT"
 repository.workspace = true
 
 [lib]
